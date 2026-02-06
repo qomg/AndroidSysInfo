@@ -1,8 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
+
+// ksp {
+//     arg("option_name", "option_value")
+//     // other options...
+// }
+
 
 android {
     namespace = "com.example.sysinfo"
@@ -27,17 +34,21 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+//    compileOptions {
+//        sourceCompatibility = JavaVersion.VERSION_11
+//        targetCompatibility = JavaVersion.VERSION_11
+//    }
+//    kotlinOptions {
+//        jvmTarget = "11"
+//    }
     buildFeatures {
         viewBinding = true
         dataBinding = false
         buildConfig = false
+    }
+
+    room {
+        schemaDirectory("$projectDir/schemas")
     }
 }
 
@@ -57,7 +68,7 @@ dependencies {
     // 如果之前未引入 Room，现在也加上（用于存储 CellTower 等）
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    ksp(libs.room.compiler) // 若使用 ksp，确保已启用 ksp 插件
+    // ksp(libs.room.compiler) // 若使用 ksp，确保已启用 ksp 插件
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

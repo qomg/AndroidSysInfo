@@ -12,10 +12,7 @@ import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
-import android.telephony.CellInfoGsm
-import android.telephony.CellInfoLte
-import android.telephony.CellInfoWcdma
-import android.telephony.TelephonyManager
+import android.telephony.*
 import androidx.core.content.ContextCompat
 import com.example.sysinfo.data.model.BatteryState
 import com.example.sysinfo.data.model.CellTower
@@ -67,26 +64,25 @@ class SysInfoRepository(private val ctx: Context) {
         return MobileState(
             isConnected = connected,
             networkType = type,
-            operator = if (op.isEmpty()) "Unknown" else "${op.substring(0, 3)}-${
-                op.substring(
-                    3,
-                    5
-                )
-            }",
+            operator = if (op.isEmpty()) {
+                "Unknown"
+            } else {
+                "${op.substring(0, 3)}-${op.substring(3, 5)}"
+            },
             roaming = tm.isNetworkRoaming,
-            cellInfoJson = runCatching { tm.allCellInfo.joinToString { it.toString() } }.getOrDefault(
-                "[]"
-            )
+            cellInfoJson = runCatching {
+                tm.allCellInfo.joinToString { it.toString() }
+            }.getOrDefault("[]")
         )
     }
 
     fun hotspot(): HotspotState {
         if (!hasPerm(Manifest.permission.ACCESS_WIFI_STATE)) return HotspotState(false)
         val enabled = try {
-            val m = Class.forName("android.net.wifi.WifiManager")
-                .getMethod("isWifiApEnabled").invoke(wm) as Boolean
-            m
-        } catch (e: Exception) {
+            val wifiManager = Class.forName("android.net.wifi.WifiManager")
+            val isWifiApEnabled = wifiManager.getMethod("isWifiApEnabled").invoke(wm) as Boolean
+            isWifiApEnabled
+        } catch (_: Exception) {
             false
         }
         return HotspotState(enabled)
@@ -98,47 +94,73 @@ class SysInfoRepository(private val ctx: Context) {
         return tm.allCellInfo?.mapNotNull {
             when (it) {
                 is CellInfoWcdma -> {
+                    val identity = it.cellIdentity
                     CellTower(
                         type = "WCDMA",
                         mcc = runCatching {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                it.cellIdentity.mccString
+                                identity.mccString
                             } else {
-                                it.cellIdentity.mcc.toString()
+                                identity.mcc.toString()
                             }
                         }.getOrNull() ?: "N/A",
                         mnc = runCatching {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                it.cellIdentity.mncString
+                                identity.mncString
                             } else {
-                                it.cellIdentity.mnc.toString()
+                                identity.mnc.toString()
                             }
                         }.getOrNull() ?: "N/A",
-                        lac = it.cellIdentity.lac.toString(),
-                        cid = it.cellIdentity.cid.toString()
+                        lac = identity.lac.toString(),
+                        cid = identity.cid.toString(),
                     )
                 }
 
                 is CellInfoGsm -> {
-                    val lac = it.cellIdentity.lac
-                    val cid = it.cellIdentity.cid
-                    CellTower(lac?.toString() ?: "N/A", cid?.toString() ?: "N/A", "", "", "GSM")
+                    val identity = it.cellIdentity
+                    CellTower(
+                        lac = identity.lac.toString(),
+                        cid = identity.cid.toString(),
+                        mcc = "",
+                        mnc = "",
+                        type = "GSM",
+                    )
                 }
 
                 is CellInfoLte -> {
                     val tac = it.cellIdentity.tac
                     val ci = it.cellIdentity.ci
-                    CellTower(tac.toString(), ci.toString(), "", "", "LTE")
+                    CellTower(
+                        lac = tac.toString(),
+                        cid = ci.toString(),
+                        mcc = "",
+                        mnc = "",
+                        type = "LTE"
+                    )
                 }
 
                 else -> {
-                    // TODO 5G android.telephony.CellInfoNr
-                    null
+                    // 5G
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && it is CellInfoNr) {
+                        val identity = it.cellIdentity as CellIdentityNr
+                        // 如果你只想展示一个唯一标识，可以用 mcc-mnc-ci 或 mcc-mnc-tac-cid
+                        CellTower(
+                            mcc = identity.mccString ?: "N/A",
+                            mnc = identity.mncString ?: "N/A",
+                            lac = "N/A",  // NR 通常没有 LAC，用 N/A 或空
+                            cid = identity.nci.toString(),
+                            type = "NR (tac=${identity.tac},pci=${identity.pci})",
+                            timestamp = System.currentTimeMillis()
+                        )
+                    } else {
+                        null
+                    }
                 }
             }
         } ?: emptyList()
     }
 
+    @SuppressLint("HardwareIds")
     fun hardware(): HardwareInfo = HardwareInfo(
         brand = Build.BRAND,
         model = Build.MODEL,
@@ -178,7 +200,7 @@ class SysInfoRepository(private val ctx: Context) {
                 ?.times(1000) ?: 0L
         return CpuState(
             cores = cores, freqMaxKhz = freqMax, freqMinKhz = freqMin, freqCurKhz = freqCur,
-            arch = System.getProperty("os.arch", "unknown"),
+            arch = System.getProperty("os.arch", "unknown") ?: "unknown",
             supportedAbis = Build.SUPPORTED_ABIS.toList()
         )
     }
@@ -195,7 +217,7 @@ class SysInfoRepository(private val ctx: Context) {
 
     private fun readFirstLine(path: String): String? = try {
         File(path).bufferedReader().useLines { it.firstOrNull() }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }
