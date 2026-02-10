@@ -180,9 +180,11 @@ class SysInfoRepository(private val ctx: Context) {
 
     fun memory(): MemoryState {
         val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val normalHeap = am.getMemoryClass()
+        val largeHeap = am.getLargeMemoryClass()
         val mi = ActivityManager.MemoryInfo()
         am.getMemoryInfo(mi)
-        return MemoryState(mi.totalMem, mi.availMem, mi.threshold, mi.lowMemory)
+        return MemoryState(mi.totalMem, mi.availMem, mi.threshold, mi.lowMemory, normalHeap, largeHeap)
     }
 
     fun cpu(): CpuState {

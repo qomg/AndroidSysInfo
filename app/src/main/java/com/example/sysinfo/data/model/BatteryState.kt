@@ -42,8 +42,14 @@ data class HardwareInfo(
 )
 
 data class MemoryState(
-    val totalBytes: Long, val availableBytes: Long, val thresholdBytes: Long,
-    val lowMemory: Boolean
+    val totalBytes: Long, 
+    val availableBytes: Long, 
+    val thresholdBytes: Long,
+    val lowMemory: Boolean,
+    // 获取普通内存类
+    val normalHeap: Int,
+    // 获取大内存类（如果设置了 largeHeap）
+    val largeHeap: Int,
 )
 
 data class CpuState(

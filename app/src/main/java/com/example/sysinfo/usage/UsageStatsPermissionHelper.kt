@@ -18,9 +18,6 @@ class UsageStatsPermissionHelper(
         private const val REQUEST_CODE_USAGE_STATS = 1001
 
         fun hasUsageStatsPermission(context: Context): Boolean {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                return false
-            }
 
             val appOps =
                 context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
@@ -45,7 +42,7 @@ class UsageStatsPermissionHelper(
             return mode == AppOpsManager.MODE_ALLOWED
         }
 
-        fun isUsageStatsSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+        fun isUsageStatsSupported(): Boolean = true
     }
 
     private var permissionCallback: ((Boolean) -> Unit)? = null

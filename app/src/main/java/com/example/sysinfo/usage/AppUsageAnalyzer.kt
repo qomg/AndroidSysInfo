@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.annotation.RequiresApi
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -21,25 +22,6 @@ class AppUsageAnalyzer(private val context: Context) {
         context.packageManager
     }
 
-    data class AppUsageAnalysis(
-        val packageName: String,
-        val appName: String,
-        val isSystemApp: Boolean,
-        val totalTimeInForeground: Long,
-        val lastTimeUsed: Long,
-        val appLaunchCount: Int,
-        val averageSessionTime: Long,
-        val usageFrequency: UsageFrequency,
-        val batteryImpactScore: Float,
-    )
-
-    enum class UsageFrequency {
-        RARELY,
-        OCCASIONALLY,
-        FREQUENTLY,
-        VERY_FREQUENTLY,
-    }
-
     fun analyzeTodayUsage(): List<AppUsageAnalysis> = analyzeUsageForPeriod(TimeUnit.DAYS.toMillis(1))
 
     fun analyzeLast7DaysUsage(): List<AppUsageAnalysis> = analyzeUsageForPeriod(TimeUnit.DAYS.toMillis(7))
@@ -47,7 +29,7 @@ class AppUsageAnalyzer(private val context: Context) {
     fun analyzeLast30DaysUsage(): List<AppUsageAnalysis> = analyzeUsageForPeriod(TimeUnit.DAYS.toMillis(30))
 
     private fun analyzeUsageForPeriod(periodMillis: Long): List<AppUsageAnalysis> {
-        if (usageStatsManager == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+        if (usageStatsManager == null) {
             return emptyList()
         }
 
@@ -67,7 +49,6 @@ class AppUsageAnalyzer(private val context: Context) {
                 val appName = getAppName(stats.packageName)
                 val isSystemApp = isSystemApp(stats.packageName)
                 val usageFrequency = calculateUsageFrequency(stats, periodMillis)
-                val averageSessionTime = calculateAverageSessionTime(stats)
                 val batteryImpactScore = calculateBatteryImpactScore(stats, isSystemApp)
 
                 AppUsageAnalysis(
@@ -77,12 +58,7 @@ class AppUsageAnalyzer(private val context: Context) {
                     totalTimeInForeground = stats.totalTimeInForeground,
                     lastTimeUsed = stats.lastTimeUsed,
                     appLaunchCount = 0,
-//                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//                            stats.appLaunchCount
-//                        } else {
-//                            0
-//                        },
-                    averageSessionTime = averageSessionTime,
+                    averageSessionTime = 0,
                     usageFrequency = usageFrequency,
                     batteryImpactScore = batteryImpactScore,
                 )
@@ -139,21 +115,6 @@ class AppUsageAnalyzer(private val context: Context) {
         }
 
         return usageDays.size
-    }
-
-    private fun calculateAverageSessionTime(stats: UsageStats): Long {
-        val launchCount =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                stats.appLaunchCount
-            } else {
-                0
-            }
-
-        return if (launchCount > 0) {
-            stats.totalTimeInForeground / launchCount
-        } else {
-            stats.totalTimeInForeground
-        }
     }
 
     private fun calculateBatteryImpactScore(
@@ -267,28 +228,8 @@ class AppUsageAnalyzer(private val context: Context) {
         )
     }
 
-    fun analyzeUserHabit(days: Int = 14): UserHabit {
-        val usageStats = getUsageStats(days)
-        
-        val totalLaunches = usageStats.sumOf { it.launchCount }
-        val mostUsedApp = usageStats.maxByOrNull { it.launchCount }
-        val averageLaunchesPerDay = totalLaunches.toDouble() / days
-        
-        return UserHabit(
-            totalLaunches = totalLaunches,
-            mostUsedApp = mostUsedApp?.packageName,
-            averageDailyLaunches = averageLaunchesPerDay,
-            uniqueAppsCount = usageStats.size
-        )
-    }
-    
-    private fun getUsageStats(days: Int): List<UsageStats> {
-        // 获取使用统计的实现
-    }
-
     companion object {
         fun isSupported(context: Context): Boolean =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-                context.getSystemService(Context.USAGE_STATS_SERVICE) != null
+            context.getSystemService(Context.USAGE_STATS_SERVICE) != null
     }
 }
