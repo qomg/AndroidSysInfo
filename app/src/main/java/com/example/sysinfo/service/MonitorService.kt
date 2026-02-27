@@ -10,13 +10,14 @@ import com.example.sysinfo.SysInfoApp
 import com.example.sysinfo.data.db.AppDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
+/**
+ * 后台服务，用于定时采集系统信息
+ */
 class MonitorService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val repo get() = (application as SysInfoApp).repository
@@ -32,7 +33,7 @@ class MonitorService : Service() {
         super.onCreate()
         val chan =
             NotificationChannel(
-                "sysinfo",
+                CHANNEL_ID,
                 "System Info Monitor",
                 NotificationManager.IMPORTANCE_LOW
             )
@@ -40,7 +41,7 @@ class MonitorService : Service() {
             chan
         )
         startForeground(
-            1, NotificationCompat.Builder(this, "sysinfo")
+            1, NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("系统监测中").setSmallIcon(android.R.drawable.ic_dialog_info)
                 .build()
         )
@@ -48,7 +49,7 @@ class MonitorService : Service() {
     }
 
     private fun startMonitoring() = scope.launch {
-        while (isActive) {
+        while (true) {
             val towers = repo.cellTowers()
             if (towers.isNotEmpty()) {
                 val now = System.currentTimeMillis()
@@ -64,5 +65,9 @@ class MonitorService : Service() {
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "sysinfo"
     }
 }

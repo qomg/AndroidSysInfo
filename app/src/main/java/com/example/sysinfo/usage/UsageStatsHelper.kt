@@ -7,8 +7,14 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
 
+/**
+ * 使用情况访问权限帮助类
+ */
 object UsageStatsHelper {
-    
+
+    /**
+     * 是否已授予使用情况访问权限
+     */
     fun isUsageStatsPermissionGranted(context: Context): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = appOps.checkOpNoThrow(
@@ -18,7 +24,10 @@ object UsageStatsHelper {
         )
         return mode == AppOpsManager.MODE_ALLOWED
     }
-    
+
+    /**
+     * 请求使用情况访问权限
+     */
     fun requestUsageStatsPermission(activity: Activity) {
         AlertDialog.Builder(activity)
             .setTitle("需要使用情况访问权限")

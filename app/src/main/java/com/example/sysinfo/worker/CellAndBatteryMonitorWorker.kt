@@ -18,6 +18,9 @@ import kotlinx.coroutines.withContext
 
 private const val TAG = "CellBatteryWorker"
 
+/**
+ * 后台任务：采集电池和网络信息
+ */
 class CellAndBatteryMonitorWorker(
     context: Context,
     params: WorkerParameters
@@ -79,6 +82,9 @@ class CellAndBatteryMonitorWorker(
     }
 }
 
+/**
+ * 手动触发一次后台采集
+ */
 fun oneTimeRequest(context: Context) {
     val oneTimeRequest = OneTimeWorkRequestBuilder<CellAndBatteryMonitorWorker>()
         .setConstraints(Constraints.Builder().build()) // 无约束

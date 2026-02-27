@@ -23,14 +23,21 @@ import com.example.sysinfo.data.model.MemoryState
 import com.example.sysinfo.data.model.MobileState
 import com.example.sysinfo.data.model.SystemInfo
 import com.example.sysinfo.data.model.WifiState
+import com.example.sysinfo.utils.DeviceIdHelper
 import java.io.File
 
+/**
+ * 系统信息仓库
+ */
 class SysInfoRepository(private val ctx: Context) {
     private val power = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val wm = ctx.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
+    /**
+     * 获取电池信息
+     */
     fun battery(): BatteryState = ctx.getSystemService(BatteryManager::class.java).run {
         val status = getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS)
         val isCharging =
@@ -39,6 +46,9 @@ class SysInfoRepository(private val ctx: Context) {
         ctx.getBatteryTemperature().copy(level = capacity, status = status, isCharging = isCharging, isPowerSave = power.isPowerSaveMode)
     }
 
+    /**
+     * 获取WiFi信息
+     */
     fun wifi(): WifiState? {
         if (!hasPerm(Manifest.permission.ACCESS_WIFI_STATE)) return null
         val info = wm.connectionInfo ?: return null
@@ -52,6 +62,9 @@ class SysInfoRepository(private val ctx: Context) {
         )
     }
 
+    /**
+     * 获取移动网络信息
+     */
     @SuppressLint("MissingPermission")
     fun mobile(): MobileState {
         val caps = cm.getNetworkCapabilities(cm.activeNetwork)
@@ -76,6 +89,9 @@ class SysInfoRepository(private val ctx: Context) {
         )
     }
 
+    /**
+     * 获取热点信息
+     */
     fun hotspot(): HotspotState {
         if (!hasPerm(Manifest.permission.ACCESS_WIFI_STATE)) return HotspotState(false)
         val enabled = try {
@@ -88,6 +104,9 @@ class SysInfoRepository(private val ctx: Context) {
         return HotspotState(enabled)
     }
 
+    /**
+     * 获取基站信息
+     */
     @SuppressLint("MissingPermission")
     fun cellTowers(): List<CellTower> {
         if (!hasPerm(Manifest.permission.ACCESS_FINE_LOCATION)) return emptyList()
@@ -160,6 +179,9 @@ class SysInfoRepository(private val ctx: Context) {
         } ?: emptyList()
     }
 
+    /**
+     * 获取硬件信息
+     */
     @SuppressLint("HardwareIds")
     fun hardware(): HardwareInfo = HardwareInfo(
         brand = Build.BRAND,
@@ -171,22 +193,25 @@ class SysInfoRepository(private val ctx: Context) {
         board = Build.BOARD,
         bootloader = Build.BOOTLOADER,
         fingerprint = Build.FINGERPRINT,
-        serial = if (hasPerm(Manifest.permission.READ_PHONE_STATE)) Build.SERIAL else null,
-        androidId = android.provider.Settings.Secure.getString(
-            ctx.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID
-        )
+        serial = runCatching { DeviceIdHelper.getSerialNo() }.getOrNull(),
+        androidId = runCatching { DeviceIdHelper.getDeviceId(ctx) }.getOrDefault("unknown")
     )
 
+    /**
+     * 获取内存信息
+     */
     fun memory(): MemoryState {
         val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val normalHeap = am.getMemoryClass()
-        val largeHeap = am.getLargeMemoryClass()
+        val normalHeap = am.memoryClass
+        val largeHeap = am.largeMemoryClass
         val mi = ActivityManager.MemoryInfo()
         am.getMemoryInfo(mi)
         return MemoryState(mi.totalMem, mi.availMem, mi.threshold, mi.lowMemory, normalHeap, largeHeap)
     }
 
+    /**
+     * 获取CPU信息
+     */
     fun cpu(): CpuState {
         val cores = File("/sys/devices/system/cpu/").listFiles { _, name ->
             name.startsWith("cpu") && Regex("cpu\\d+").matches(name)
@@ -207,6 +232,9 @@ class SysInfoRepository(private val ctx: Context) {
         )
     }
 
+    /**
+     * 获取系统信息
+     */
     fun system(): SystemInfo = SystemInfo(
         os = "Android ${Build.VERSION.RELEASE}",
         sdkInt = Build.VERSION.SDK_INT,
@@ -214,9 +242,15 @@ class SysInfoRepository(private val ctx: Context) {
         securityPatch = Build.VERSION.SECURITY_PATCH
     )
 
+    /**
+     * 检查是否有权限
+     */
     private fun hasPerm(perm: String) =
         ContextCompat.checkSelfPermission(ctx, perm) == PackageManager.PERMISSION_GRANTED
 
+    /**
+     * 读取文件第一行
+     */
     private fun readFirstLine(path: String): String? = try {
         File(path).bufferedReader().useLines { it.firstOrNull() }
     } catch (_: Exception) {

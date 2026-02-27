@@ -1,5 +1,8 @@
 package com.example.sysinfo.usage
 
+/**
+ * 应用使用情况分析
+ */
 data class AppUsageAnalysis(
     val packageName: String,
     val appName: String,

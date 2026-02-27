@@ -12,11 +12,7 @@ import com.example.sysinfo.data.model.BatteryState
  */
 fun Context.getBatteryTemperature(): BatteryState {
     val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-    val batteryStatus = registerReceiver(null, filter) // 粘性广播，无需注册
-
-    if (batteryStatus == null) {
-        return BatteryState()
-    }
+    val batteryStatus: Intent = registerReceiver(null, filter) ?: return BatteryState() // 粘性广播，无需注册
 
     // 电池温度，单位是 0.1°C 的整数
     val temperature = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)

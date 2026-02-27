@@ -15,7 +15,9 @@ import com.example.sysinfo.data.model.MemoryState
 import com.example.sysinfo.data.model.MobileState
 import com.example.sysinfo.data.model.SystemInfo
 import com.example.sysinfo.data.model.WifiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MonitorViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as SysInfoApp).repository
@@ -44,7 +46,7 @@ class MonitorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refresh() = viewModelScope.launch { loadAll() }
 
-    private suspend fun loadAll() {
+    private suspend fun loadAll() = withContext(Dispatchers.IO) {
         _battery.value = repo.battery()
         _wifi.value = repo.wifi()
         _mobile.value = repo.mobile()

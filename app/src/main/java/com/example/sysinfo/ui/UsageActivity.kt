@@ -2,21 +2,43 @@ package com.example.sysinfo.ui
 
 import android.os.Bundle
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.sysinfo.R
 import com.example.sysinfo.usage.AppUsageAnalyzer
 import com.example.sysinfo.usage.UsageStatsHelper
+import com.example.sysinfo.usage.UsageStatsPermissionHelper
 import com.example.sysinfo.usage.UsageStatsPermissionManager
 
 class UsageActivity : AppCompatActivity(R.layout.activity_usage) {
+
+    private val helper = UsageStatsPermissionHelper(this)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         println(UsageStatsPermissionManager(this).getPermissionExplanation())
+
+        helper.checkAndRequestPermission({
+            analyzeUsage()
+        }, {
+            Toast.makeText(this, "权限被拒绝", Toast.LENGTH_SHORT).show()
+        })
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String?>,
+        grantResults: IntArray,
+        deviceId: Int
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
+        helper.handleActivityResult(requestCode, 0, null)
     }
 
     override fun onResume() {
         super.onResume()
+        return
         if (AppUsageAnalyzer.isSupported(this)) {
             window?.decorView?.postDelayed({
                 if (UsageStatsHelper.isUsageStatsPermissionGranted(this)) {

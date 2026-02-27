@@ -22,12 +22,24 @@ class AppUsageAnalyzer(private val context: Context) {
         context.packageManager
     }
 
+    /**
+     * 分析今天的使用情况
+     */
     fun analyzeTodayUsage(): List<AppUsageAnalysis> = analyzeUsageForPeriod(TimeUnit.DAYS.toMillis(1))
 
+    /**
+     * 分析最近7天的使用情况
+     */
     fun analyzeLast7DaysUsage(): List<AppUsageAnalysis> = analyzeUsageForPeriod(TimeUnit.DAYS.toMillis(7))
 
+    /**
+     * 分析最近30天的使用情况
+     */
     fun analyzeLast30DaysUsage(): List<AppUsageAnalysis> = analyzeUsageForPeriod(TimeUnit.DAYS.toMillis(30))
 
+    /**
+     * 分析指定时间段的使用情况
+     */
     private fun analyzeUsageForPeriod(periodMillis: Long): List<AppUsageAnalysis> {
         if (usageStatsManager == null) {
             return emptyList()
@@ -65,6 +77,9 @@ class AppUsageAnalyzer(private val context: Context) {
             }.sortedByDescending { it.totalTimeInForeground }
     }
 
+    /**
+     * 获取应用名称
+     */
     private fun getAppName(packageName: String): String =
         try {
             val appInfo = packageManager.getApplicationInfo(packageName, 0)
@@ -73,6 +88,9 @@ class AppUsageAnalyzer(private val context: Context) {
             packageName
         }
 
+    /**
+     * 判断应用是否是系统应用
+     */
     private fun isSystemApp(packageName: String): Boolean =
         try {
             val appInfo = packageManager.getApplicationInfo(packageName, 0)
@@ -81,6 +99,9 @@ class AppUsageAnalyzer(private val context: Context) {
             true
         }
 
+    /**
+     * 计算使用频率
+     */
     private fun calculateUsageFrequency(
         stats: UsageStats,
         periodMillis: Long,
@@ -98,6 +119,9 @@ class AppUsageAnalyzer(private val context: Context) {
         }
     }
 
+    /**
+     * 获取使用天数
+     */
     private fun getUsageDaysCount(
         stats: UsageStats,
         periodMillis: Long,
@@ -117,6 +141,9 @@ class AppUsageAnalyzer(private val context: Context) {
         return usageDays.size
     }
 
+    /**
+     * 计算电池影响分数
+     */
     private fun calculateBatteryImpactScore(
         stats: UsageStats,
         isSystemApp: Boolean,
@@ -146,17 +173,32 @@ class AppUsageAnalyzer(private val context: Context) {
         return baseScore * categoryMultiplier
     }
 
+    /**
+     * 获取使用时间最多的应用
+     */
     fun getTopUsedApps(limit: Int = 10): List<AppUsageAnalysis> = analyzeTodayUsage().take(limit)
 
+    /**
+     * 获取耗电最多的应用
+     */
     fun getTopBatteryDrainingApps(limit: Int = 10): List<AppUsageAnalysis> =
         analyzeTodayUsage()
             .sortedByDescending { it.batteryImpactScore }
             .take(limit)
 
+    /**
+     * 获取用户应用
+     */
     fun getUserAppsOnly(): List<AppUsageAnalysis> = analyzeTodayUsage().filter { !it.isSystemApp }
 
+    /**
+     * 获取系统应用
+     */
     fun getSystemAppsOnly(): List<AppUsageAnalysis> = analyzeTodayUsage().filter { it.isSystemApp }
 
+    /**
+     * 获取使用情况按类别分组
+     */
     fun getUsageByCategory(): Map<String, List<AppUsageAnalysis>> {
         val todayUsage = analyzeTodayUsage()
         val categories = mutableMapOf<String, MutableList<AppUsageAnalysis>>()
@@ -169,6 +211,9 @@ class AppUsageAnalyzer(private val context: Context) {
         return categories
     }
 
+    /**
+     * 获取应用类别
+     */
     private fun categorizeApp(packageName: String): String =
         when {
             packageName.contains("com.google.android.youtube") ||
@@ -207,6 +252,9 @@ class AppUsageAnalyzer(private val context: Context) {
             else -> "其他应用"
         }
 
+    /**
+     * 获取使用情况概要
+     */
     fun getUsageSummary(): Map<String, Any> {
         val todayUsage = analyzeTodayUsage()
         val userApps = todayUsage.filter { !it.isSystemApp }
@@ -229,6 +277,9 @@ class AppUsageAnalyzer(private val context: Context) {
     }
 
     companion object {
+        /**
+         * 判断是否支持应用使用情况分析
+         */
         fun isSupported(context: Context): Boolean =
             context.getSystemService(Context.USAGE_STATS_SERVICE) != null
     }
