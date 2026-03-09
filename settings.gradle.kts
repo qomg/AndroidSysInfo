@@ -29,3 +29,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SysInfo"
 include(":app")
+include(":baseline-profile")

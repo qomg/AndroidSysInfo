@@ -88,6 +88,14 @@ APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
 APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s\n' "$PWD" ) || exit
 
+# Set JAVA_HOME from local.properties if not already set (java.home=...)
+if [ -z "$JAVA_HOME" ] && [ -f "$APP_HOME/local.properties" ]; then
+    _java_home=$( sed -n 's/^java\.home=//p' "$APP_HOME/local.properties" | sed 's/\r$//' )
+    if [ -n "$_java_home" ]; then
+        export JAVA_HOME="$_java_home"
+    fi
+fi
+
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 

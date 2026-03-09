@@ -1,6 +1,13 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.room)
+    alias(libs.plugins.baselineprofile)
+}
+
+baselineProfile {
+    warnings {
+        maxAgpVersion = false
+    }
 }
 
 room {
@@ -23,7 +30,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -49,11 +57,18 @@ dependencies {
     implementation(libs.material)
     implementation(libs.swiperefreshlayout)
 
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
     // WorkManager
     implementation(libs.work.runtime.ktx)
     // 如果之前未引入 Room，现在也加上（用于存储 CellTower 等）
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+
+    // Baseline Profile：安装时预编译关键路径，提升启动与运行性能
+    implementation(libs.profileinstaller)
+
+    baselineProfile(project(":baseline-profile"))
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
