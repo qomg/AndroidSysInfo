@@ -60,3 +60,33 @@ data class CpuState(
 data class SystemInfo(
     val os: String, val sdkInt: Int, val buildId: String, val securityPatch: String?
 )
+
+/**
+ * 整机实时网速（基于 TrafficStats 采样差值）
+ */
+data class NetSpeedState(
+    val rxSpeedBps: Long,    // 下行速率 B/s
+    val txSpeedBps: Long,    // 上行速率 B/s
+    val totalRxBytes: Long,  // 开机以来累计下行
+    val totalTxBytes: Long,  // 开机以来累计上行
+    val supported: Boolean = true,
+)
+
+/**
+ * 单个应用的流量统计（基于 NetworkStatsManager），按 WiFi / 移动网络分项。
+ */
+data class AppNetUsage(
+    val uid: Int,
+    val packageName: String,
+    val appName: String,
+    val wifiRx: Long = 0,    // WiFi 下行
+    val wifiTx: Long = 0,    // WiFi 上行
+    val mobileRx: Long = 0,  // 移动 下行
+    val mobileTx: Long = 0,  // 移动 上行
+) {
+    val wifiBytes: Long get() = wifiRx + wifiTx
+    val mobileBytes: Long get() = mobileRx + mobileTx
+    val rxBytes: Long get() = wifiRx + mobileRx
+    val txBytes: Long get() = wifiTx + mobileTx
+    val totalBytes: Long get() = rxBytes + txBytes
+}

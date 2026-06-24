@@ -8,7 +8,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.commitNow
+import androidx.fragment.app.commit
 import com.example.sysinfo.R
 
 class PermissionFragment : Fragment(R.layout.frag_permission) {
@@ -44,7 +44,11 @@ class PermissionFragment : Fragment(R.layout.frag_permission) {
     }
 
     private fun showInfo() {
-        parentFragmentManager.commitNow {
+        // onStart 处于 FragmentManager 事务执行周期内，commitNow 会因重入抛
+        // "FragmentManager is already executing transactions"。用异步 commit 规避，
+        // 并加 isStateSaved 守卫防止 onSaveInstanceState 之后提交导致状态丢失异常。
+        if (!isAdded || isStateSaved) return
+        parentFragmentManager.commit {
             replace(id, MonitorFragment())
         }
     }

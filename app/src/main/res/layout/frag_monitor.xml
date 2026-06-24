@@ -105,6 +105,42 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp" />
 
+            <!-- 实时网速 (TrafficStats) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="🌐 实时网速"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/netSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/netTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 分 App 流量 (NetworkStatsManager) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="📊 应用流量 (今日)"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/appNet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
+
             <!-- 热点 -->
             <TextView
                 android:layout_width="wrap_content"

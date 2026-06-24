@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.baselineprofile)
 }
@@ -64,6 +65,7 @@ dependencies {
     // 如果之前未引入 Room，现在也加上（用于存储 CellTower 等）
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 
     // Baseline Profile：安装时预编译关键路径，提升启动与运行性能
     implementation(libs.profileinstaller)

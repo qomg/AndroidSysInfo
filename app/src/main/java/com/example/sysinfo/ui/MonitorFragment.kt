@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.sysinfo.R
 import com.example.sysinfo.SysInfoApp
+import com.example.sysinfo.data.model.AppNetUsage
 import com.example.sysinfo.data.model.BatteryState
 import com.example.sysinfo.data.model.CellTower
 import com.example.sysinfo.data.model.CpuState
@@ -16,10 +17,12 @@ import com.example.sysinfo.data.model.HardwareInfo
 import com.example.sysinfo.data.model.HotspotState
 import com.example.sysinfo.data.model.MemoryState
 import com.example.sysinfo.data.model.MobileState
+import com.example.sysinfo.data.model.NetSpeedState
 import com.example.sysinfo.data.model.SystemInfo
 import com.example.sysinfo.data.model.WifiState
 import com.example.sysinfo.databinding.FragMonitorBinding
 import com.example.sysinfo.service.MonitorService
+import com.example.sysinfo.utils.ByteFormat
 
 class MonitorFragment : Fragment(R.layout.frag_monitor) {
     private val vm: MonitorViewModel by activityViewModels()
@@ -37,6 +40,11 @@ class MonitorFragment : Fragment(R.layout.frag_monitor) {
             requireContext().startForegroundService(intent)
             Toast.makeText(requireContext(), "后台监测服务已启动", Toast.LENGTH_SHORT).show()
         }
+
+        // 点击「应用流量」区进入完整列表页
+        binding.appNet.setOnClickListener {
+            startActivity(Intent(requireContext(), AppTrafficActivity::class.java))
+        }
     }
 
     private fun setupRefresh() {
@@ -47,6 +55,8 @@ class MonitorFragment : Fragment(R.layout.frag_monitor) {
         vm.battery.observe(viewLifecycleOwner) { b -> bindBattery(b) }
         vm.wifi.observe(viewLifecycleOwner) { w -> bindWifi(w) }
         vm.mobile.observe(viewLifecycleOwner) { m -> bindMobile(m) }
+        vm.netSpeed.observe(viewLifecycleOwner) { s -> bindNetSpeed(s) }
+        vm.appNet.observe(viewLifecycleOwner) { a -> bindAppNet(a) }
         vm.hotspot.observe(viewLifecycleOwner) { h -> bindHotspot(h) }
         vm.cells.observe(viewLifecycleOwner) { cs -> bindCells(cs) }
         vm.hardware.observe(viewLifecycleOwner) { h -> bindHardware(h) }
@@ -75,6 +85,28 @@ class MonitorFragment : Fragment(R.layout.frag_monitor) {
         binding.mobile.text =
             "移动: ${m.networkType} (${m.operator})${if (m.roaming) " 漫游" else ""}"
         binding.roaming.text = "漫游: ${if (m.isConnected) "是" else "否"}"
+    }
+
+    private fun bindNetSpeed(s: NetSpeedState) {
+        if (!s.supported) {
+            binding.netSpeed.text = "网速: 设备不支持流量统计"
+            binding.netTotal.text = ""
+            return
+        }
+        binding.netSpeed.text = "↓ ${fmtSpeed(s.rxSpeedBps)}   ↑ ${fmtSpeed(s.txSpeedBps)}"
+        binding.netTotal.text =
+            "累计(开机以来): 收 ${fmt(s.totalRxBytes)} / 发 ${fmt(s.totalTxBytes)}"
+    }
+
+    private fun bindAppNet(apps: List<AppNetUsage>) {
+        if (apps.isEmpty()) {
+            binding.appNet.text = "需开启「使用情况访问」权限才能统计应用流量（点击前往）"
+            return
+        }
+        val lines = apps.joinToString("\n") { a ->
+            "${a.appName}: ↓${fmt(a.rxBytes)} ↑${fmt(a.txBytes)}"
+        }
+        binding.appNet.text = "$lines\n\n— 点击查看全部应用流量 —"
     }
 
     private fun bindHotspot(h: HotspotState) {
@@ -113,13 +145,9 @@ class MonitorFragment : Fragment(R.layout.frag_monitor) {
         }
     }
 
-    private fun fmt(bytes: Long): String {
-        val unit = 1024.0
-        if (bytes < unit) return "$bytes B"
-        val exp = (Math.log(bytes.toDouble()) / Math.log(unit)).toInt()
-        val pre = "KMGTPE"[exp - 1]
-        return String.format("%.1f %sB", bytes / Math.pow(unit, exp.toDouble()), pre)
-    }
+    private fun fmt(bytes: Long): String = ByteFormat.bytes(bytes)
+
+    private fun fmtSpeed(bytesPerSec: Long): String = ByteFormat.speed(bytesPerSec)
 
 
 

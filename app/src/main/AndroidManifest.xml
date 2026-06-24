@@ -46,6 +46,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.AppTrafficActivity"
+            android:exported="false"
+            android:label="应用流量" />
+
         <service
             android:name=".service.MonitorService"
             android:exported="false"
